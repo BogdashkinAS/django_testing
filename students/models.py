@@ -3,7 +3,7 @@ from django.db import models
 
 class Student(models.Model):
 
-    name = models.TextField()
+    name = models.TextField(max_length=10)
 
     birth_date = models.DateField(
         null=True,
@@ -14,7 +14,7 @@ class Student(models.Model):
 
 class Course(models.Model):
 
-    name = models.TextField()
+    name = models.TextField(max_length=10)
 
     students = models.ManyToManyField(
         Student,

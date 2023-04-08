@@ -1,9 +1,9 @@
+from rest_framework.test import APIRequestFactory
 from django.urls import reverse
 import pytest
-# from django.contrib.auth.models import User
 from rest_framework.test import APIClient
 from model_bakery import baker
-
+import json
 from students.models import Student, Course
 
 @pytest.fixture
@@ -20,7 +20,7 @@ def students_factory():
 @pytest.fixture
 def course_factory(students_factory):
     def factory(*args, **kwargs):
-        students_set = students_factory(_quantity=3, _fill_optional=True, name='Smith')
+        students_set = students_factory(_quantity=3, _fill_optional=True)
         return baker.make(Course, students=students_set, *args, **kwargs, make_m2m=True)
 
     return factory
@@ -31,31 +31,22 @@ def course_factory(students_factory):
 @pytest.mark.django_db(transaction=True, reset_sequences=True) # подключение тестовой БД
 def test_get_first_course(client, course_factory):
     # Arrange
-    course = course_factory(_quantity=1, name='name1')
+    course = course_factory(_quantity=1)
+    students_list = []
 
     # # Act
     response = client.get('/courses/')
-    # response = client.get(reverse('courses-list'))
     data = response.json()
+    students = list(course[0].students.all())
 
     # Assert
-    for i in data[0]['students']:
-        print(i)
     assert data[0]['id'] == course[0].id
     assert data[0]['name'] == course[0].name
+    for student in students:
+        students_list.append(str(student))
+    assert data[0]['students'] == students_list
     assert response.status_code == 200
 
-    # assert [f'{st.name}, {st.birth_date}' for st in course[0].students.all()] == [st for st in response.json()[0]['students']]
-    # for dat in data:
-    #     print(dat)
-    # for i in course[0].students.all():
-    #     print(f'Имя: {i.name}')
-    #     print(f'Дата: {i.birth_date}')
-    # assert course[0].name == '5'
-    # assert data[0]['students'][0].id == '000'
-    # assert course[0].students.all() == '000'
-    
-    
 
 
 # проверка получения списка курсов (list-логика)
@@ -64,7 +55,8 @@ def test_get_first_course(client, course_factory):
 def test_get_all_course(client, course_factory):
     # Arrange
     course = course_factory(_quantity=5)
-
+    students_list = []
+    
     # Act
     response = client.get('/courses/')
     data = response.json()
@@ -72,18 +64,24 @@ def test_get_all_course(client, course_factory):
     # Assert
     assert len(data) == len(course)
     for i in range(len(course)):
+        students_list = []
         assert data[i]['id'] == course[i].id
         assert data[i]['name'] == course[i].name
-        assert response.status_code == 200
-    
+        students = list(course[i].students.all())
+        for student in students:
+            students_list.append(str(student))
+        assert data[i]['students'] == students_list
+    assert response.status_code == 200
 
 
-# # проверка фильтрации списка курсов по id
+
+# проверка фильтрации списка курсов по id
 
 @pytest.mark.django_db(transaction=True, reset_sequences=True) # подключение тестовой БД
 def test_get_filter_id_course(client, course_factory):
     # Arrange
     course = course_factory(_quantity=5)
+    students_list = []
 
     # Act
     response = client.get('/courses/?id=5')
@@ -91,11 +89,16 @@ def test_get_filter_id_course(client, course_factory):
     
     # Assert
     assert data[0]['id'] == course[4].id
+    assert data[0]['name'] == course[4].name
+    students = list(course[4].students.all())
+    for student in students:
+        students_list.append(str(student))
+    assert data[0]['students'] == students_list
     assert response.status_code == 200
     
 
 
-# # проверка фильтрации списка курсов по name
+# проверка фильтрации списка курсов по name
 
 @pytest.mark.django_db(transaction=True, reset_sequences=True) # подключение тестовой БД
 def test_get_filter_name_course(client, course_factory):
@@ -103,6 +106,7 @@ def test_get_filter_name_course(client, course_factory):
     course = course_factory(_quantity=4)
     course2 = course_factory(name='Physics')
     course.append(course2)
+    students_list = []
 
     # Act
     response = client.get('/courses/?name=Physics')
@@ -113,19 +117,23 @@ def test_get_filter_name_course(client, course_factory):
     assert course[4].name == 'Physics'
     assert data[0]['name'] == 'Physics'
     assert data[0]['name'] == course[4].name
+    students = list(course[4].students.all())
+    for student in students:
+        students_list.append(str(student))
+    assert data[0]['students'] == students_list
     assert response.status_code == 200
     
 
 
-# # тест успешного создания курса
+# тест успешного создания курса
 
 @pytest.mark.django_db(transaction=True, reset_sequences=True) # подключение тестовой БД
 def test_make_course(client):
     # Arrange
-    records = {'name': 'Physics'}   
+    data = {'name': 'Physics'}  
 
     # Act
-    response = client.post('/courses/', records)
+    response = client.post('/courses/', data)
     data = response.json()
     
     # Assert
@@ -134,13 +142,14 @@ def test_make_course(client):
     assert response.status_code == 201
 
 
-# # тест успешного обновления курса
+# тест успешного обновления курса
 
 @pytest.mark.django_db(transaction=True, reset_sequences=True) # подключение тестовой БД
 def test_patch_course(client, course_factory):
     # Arrange
     course = course_factory(_quantity=1)
     records = {'name': 'Physics'}   
+    students_list = []
 
     # Act
     response = client.patch('/courses/1/', records)
@@ -150,10 +159,14 @@ def test_patch_course(client, course_factory):
     assert data['id'] == 1
     assert data['name'] == 'Physics'
     assert course[0].name != data['name']
+    students = list(course[0].students.all())
+    for student in students:
+        students_list.append(str(student))
+    assert data['students'] == students_list
     assert response.status_code == 200
     
     
-# # тест успешного удаления курса
+# тест успешного удаления курса
 
 @pytest.mark.django_db(transaction=True, reset_sequences=True) # подключение тестовой БД
 def test_delete_course(client, course_factory):
@@ -165,4 +178,3 @@ def test_delete_course(client, course_factory):
     
     # Assert
     assert response.status_code == 204
-    
