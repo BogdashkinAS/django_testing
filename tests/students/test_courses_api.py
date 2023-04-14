@@ -1,9 +1,6 @@
-from rest_framework.test import APIRequestFactory
-from django.urls import reverse
 import pytest
 from rest_framework.test import APIClient
 from model_bakery import baker
-import json
 from students.models import Student, Course
 
 @pytest.fixture
@@ -31,20 +28,21 @@ def course_factory(students_factory):
 @pytest.mark.django_db(transaction=True, reset_sequences=True) # подключение тестовой БД
 def test_get_first_course(client, course_factory):
     # Arrange
-    course = course_factory(_quantity=1)
+    course = course_factory(_quantity=5)
     students_list = []
+    id_course = course[0].id
 
     # # Act
-    response = client.get('/courses/')
+    response = client.get(f'/courses/{id_course}/')
     data = response.json()
     students = list(course[0].students.all())
 
     # Assert
-    assert data[0]['id'] == course[0].id
-    assert data[0]['name'] == course[0].name
+    assert data['id'] == course[0].id
+    assert data['name'] == course[0].name
     for student in students:
         students_list.append(str(student))
-    assert data[0]['students'] == students_list
+    assert data['students'] == students_list
     assert response.status_code == 200
 
 
@@ -84,7 +82,7 @@ def test_get_filter_id_course(client, course_factory):
     students_list = []
 
     # Act
-    response = client.get('/courses/?id=5')
+    response = client.get('/courses/', {'id': 5})
     data = response.json()
     
     # Assert
@@ -109,7 +107,7 @@ def test_get_filter_name_course(client, course_factory):
     students_list = []
 
     # Act
-    response = client.get('/courses/?name=Physics')
+    response = client.get('/courses/', {'name': 'Physics'})
     data = response.json()
     
     # Assert
@@ -130,10 +128,9 @@ def test_get_filter_name_course(client, course_factory):
 @pytest.mark.django_db(transaction=True, reset_sequences=True) # подключение тестовой БД
 def test_make_course(client):
     # Arrange
-    data = {'name': 'Physics'}  
 
     # Act
-    response = client.post('/courses/', data)
+    response = client.post('/courses/', {'name': 'Physics'})
     data = response.json()
     
     # Assert
@@ -147,12 +144,12 @@ def test_make_course(client):
 @pytest.mark.django_db(transaction=True, reset_sequences=True) # подключение тестовой БД
 def test_patch_course(client, course_factory):
     # Arrange
-    course = course_factory(_quantity=1)
-    records = {'name': 'Physics'}   
+    course = course_factory(_quantity=5)
     students_list = []
+    id_course = course[0].id
 
     # Act
-    response = client.patch('/courses/1/', records)
+    response = client.patch(f'/courses/{id_course}/', {'name': 'Physics'})
     data = response.json()
     
     # Assert
@@ -171,10 +168,14 @@ def test_patch_course(client, course_factory):
 @pytest.mark.django_db(transaction=True, reset_sequences=True) # подключение тестовой БД
 def test_delete_course(client, course_factory):
     # Arrange
-    course = course_factory(_quantity=1)
+    course = course_factory(_quantity=5)
+    id_course = course[0].id
 
     # Act
-    response = client.delete('/courses/1/')
+    response = client.delete(f'/courses/{id_course}/')
+    response2 = client.get('/courses/')
+    data = response2.json()
     
     # Assert
+    assert len(data) == 4
     assert response.status_code == 204

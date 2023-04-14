@@ -22,10 +22,9 @@ from students.views import CoursesViewSet
 router = DefaultRouter()
 # router.register("courses", CoursesViewSet, basename="courses")
 router.register("courses", CoursesViewSet)
-# router.register("students", StudentsViewSet)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    # path("api/v1/", include(router.urls)),
+#     path("api/v1/", include(router.urls)),
 # ]
 ] + router.urls
