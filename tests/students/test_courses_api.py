@@ -1,3 +1,4 @@
+from django.urls import reverse
 import pytest
 from rest_framework.test import APIClient
 from model_bakery import baker
@@ -33,7 +34,7 @@ def test_get_first_course(client, course_factory):
     id_course = course[0].id
 
     # # Act
-    response = client.get(f'/courses/{id_course}/')
+    response = client.get(reverse('courses-detail', args=[id_course]))
     data = response.json()
     students = list(course[0].students.all())
 
@@ -56,7 +57,7 @@ def test_get_all_course(client, course_factory):
     students_list = []
     
     # Act
-    response = client.get('/courses/')
+    response = client.get(reverse('courses-list'))
     data = response.json()
     
     # Assert
@@ -82,7 +83,7 @@ def test_get_filter_id_course(client, course_factory):
     students_list = []
 
     # Act
-    response = client.get('/courses/', {'id': 5})
+    response = client.get(reverse('courses-list'), {'id': 5})
     data = response.json()
     
     # Assert
@@ -107,7 +108,7 @@ def test_get_filter_name_course(client, course_factory):
     students_list = []
 
     # Act
-    response = client.get('/courses/', {'name': 'Physics'})
+    response = client.get(reverse('courses-list'), {'name': 'Physics'})
     data = response.json()
     
     # Assert
@@ -130,7 +131,7 @@ def test_make_course(client):
     # Arrange
 
     # Act
-    response = client.post('/courses/', {'name': 'Physics'})
+    response = client.post(reverse('courses-list'), {'name': 'Physics'})
     data = response.json()
     
     # Assert
@@ -149,7 +150,7 @@ def test_patch_course(client, course_factory):
     id_course = course[0].id
 
     # Act
-    response = client.patch(f'/courses/{id_course}/', {'name': 'Physics'})
+    response = client.patch(reverse('courses-detail', args=[id_course]), {'name': 'Physics'})
     data = response.json()
     
     # Assert
@@ -172,8 +173,8 @@ def test_delete_course(client, course_factory):
     id_course = course[0].id
 
     # Act
-    response = client.delete(f'/courses/{id_course}/')
-    response2 = client.get('/courses/')
+    response = client.delete(reverse('courses-detail', args=[id_course]))
+    response2 = client.get(reverse('courses-list'))
     data = response2.json()
     
     # Assert

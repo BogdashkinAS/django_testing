@@ -20,11 +20,10 @@ from rest_framework.routers import DefaultRouter
 from students.views import CoursesViewSet
 
 router = DefaultRouter()
-# router.register("courses", CoursesViewSet, basename="courses")
-router.register("courses", CoursesViewSet)
+router.register("courses", CoursesViewSet, basename="courses")
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-#     path("api/v1/", include(router.urls)),
-# ]
-] + router.urls
+    path("api/v1/", include(router.urls)),
+]
+
